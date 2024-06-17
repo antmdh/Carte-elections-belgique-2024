@@ -1,0 +1,289 @@
+#####
+# Code pour faire resultat electoraux belgiques
+# Ordinateur perso 1
+# date 17/06/2024
+#####
+
+# 1 #installation et modules ----
+#install.packages("dplyr")
+library(dplyr)
+
+#install.packages("sp")  
+library(sp)
+#install.packages("tmap")  
+library(tmap)
+#install.packages("sf")
+library(sf)
+
+#install.packages("RColorBrewer")
+library(RColorBrewer)
+
+#install.packages("xlsx")  
+library(xlsx)
+
+
+#install.packages("ggplot2")
+library(ggplot2)
+
+#install.packages("lubridate")
+library(lubridate)
+#install.packages("openxlsx")
+library(openxlsx)
+#install.packages("scales")
+library(scales)
+#install.packages('stringr')
+library(stringr)
+#install.packages("tidyr")
+library(tidyr)
+#install.packages("transformr")
+library(transformr)
+#install.packages("remotes")
+library(remotes)
+#remotes::install_github("r-tmap/tmap")
+library(tmap)
+
+
+# 2. Etablissement de la carte ----
+# Chemin vers le dossier contenant vos fichiers
+shapefile_path <- "C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/daca9ccf-a9e1-11ec-a672-186571a04de2_x-shapefile_4326/electoralcanton_4326.shp"
+# Lire le fichier shapefile
+electoral_cantons <- st_read(shapefile_path)
+
+electoral_cantons <- electoral_cantons[!st_is_empty(electoral_cantons), ]
+electoral_cantons$cantonhead
+write.csv2(electoral_cantons$cantonhead,"C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/listecodecarte.csv",fileEncoding = "UTF-16BE")
+
+provinces_belges<-st_read("C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/daca9ccf-a9e1-11ec-a672-186571a04de2_x-shapefile_4326/province_4326.shp")
+provinces_belges <- provinces_belges[!st_is_empty(provinces_belges), ]
+ggplot(data = provinces_belges)+
+  geom_sf(aes(fill = fictitious))
+
+str(provinces_belges, max.level = 2)
+
+#3 Rajout des données 
+#tableau de bord ----
+partetudie<- listeparti[1]
+partetudie<- listeparti[2]
+partetudie<- listeparti[3]
+partetudie<- listeparti[4]
+partetudie<- listeparti[5]
+partetudie<- listeparti[6]
+partetudie<- listeparti[7]
+partetudie<- listeparti[8]
+partetudie<- listeparti[9]
+choixcouleur<-brewer.pal(n=9, "Spectral")
+listeparti<-election_europe%>%filter(X20.24!=0)%>%group_by(PARTI_REGROUPE)%>%tally()%>%pull(PARTI_REGROUPE)
+
+
+
+# choixcouleur<-c("#ffff00", "#bfff00", "#80ff00", "#40ff00", "#00ff00", "#00bfff", "#0080ff", "#0040ff", "#4000ff")
+# 
+# 
+# choixcouleur<-c("#e5e5e5",
+#                 "#cccccc",
+#                 "#b2b2b2",
+#                 "#999999",
+#                 "#7f7f7f",
+#                 "#666666",
+#                 "#4c4c4c",
+#                 "#333333",
+#                 "#191919")
+# 
+display.brewer.all()
+# 
+# 
+election_europe<-xlsx::read.xlsx("C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/20240609_election_europeenne.xlsx", sheetIndex = 1)
+election_europe<-data.frame(election_europe)
+glimpse(election_europe)
+
+election_europe<-election_europe%>%mutate(PARTI_REGROUPE = case_when(
+  PARTI == "PVDA"~"PTB.PVDA",
+  PARTI == "PTB"~"PTB.PVDA", 
+  PARTI == "Open Vld"~"MR.VLD",
+  PARTI == "Open Vld Renew EU"~"MR.VLD",
+  PARTI == "MR"~"MR.VLD",
+  PARTI =="PFF-MR"~"MR.VLD",
+  PARTI == "ECOLO"~"GROEN.ECOLO",
+  PARTI == "GROEN"~"GROEN.ECOLO",
+  PARTI == "sp.a"~"PS.Vooruit",
+  PARTI == "SP"~"PS.Vooruit",
+  PARTI == "PS"~"PS.Vooruit",
+  PARTI == "Vooruit"~"PS.Vooruit",
+  PARTI == "LES ENGAGÉS"~"LES ENGAGÉS.CD&V.CSP",
+  PARTI == "cd&v"~"LES ENGAGÉS.CD&V.CSP",
+  PARTI == "N-VA"~"NVA-DéFI-ProDG",
+  PARTI == "NVA"~"NVA-DéFI-ProDG",  
+  PARTI =="CSP"~"LES ENGAGÉS.CD&V.CSP",
+  PARTI =="Anticapitalistes"~"Petites_listes",
+  PARTI =="ProDG"~"NVA-DéFI-ProDG",
+  PARTI =="Voor U"~"Petites_listes",
+  PARTI =="Voor U"~"Petites_listes",
+  PARTI =="Volt Europa"~"Petites_listes",
+  PARTI =="VIVANT"~"Petites_listes",  
+  PARTI =="NVA"~"NVA-DéFI-ProDG",
+  PARTI =="DéFI"~"NVA-DéFI-ProDG",
+  TRUE~PARTI 
+))
+
+election_europe$X20.24<-as.double(election_europe$X20.24)
+election_europe$X20.24[is.na(election_europe$X20.24)]<-"0"
+election_europe$X20.24<-as.double(election_europe$X20.24)
+
+print(election_europe%>%filter(X20.24!=0)%>%group_by(PARTI_REGROUPE)%>%tally(), n=200)
+
+
+election_europe$variation[is.na(election_europe$variation)]<-"0"
+election_europe$variation<-as.double(election_europe$variation)
+election_europe$variation[is.na(election_europe$variation)]<-0
+
+for(i in listeparti){
+  partetudie<-i
+
+
+partione<- election_europe%>%filter(PARTI_REGROUPE == partetudie)%>%group_by(CODE_RECONCILIATION)%>%summarise(total = sum(X20.24))
+partione$CODE_RECONCILIATION
+
+
+
+parti<-merge(electoral_cantons,partione, by.x =  "cantonhead", by.y = "CODE_RECONCILIATION" )
+
+
+parti$total
+
+parti$total_bins <- cut(parti$total, breaks = seq(0, 1, by = 0.1), include.lowest = TRUE)
+
+###creation de carte ----
+
+maphd<-ggplot(data = parti) +
+  geom_sf(aes(fill = total_bins)) +  # Remplacez `total` par la colonne que vous souhaitez utiliser pour la coloration
+  #scale_fill_brewer(palette = couleurdechoix) +
+  scale_fill_manual(values = choixcouleur) +
+  theme_minimal() +
+  geom_sf(data =electoral_cantons, color = "grey", fill = NA, size = 0.5) +  # Ajouter les frontières
+  geom_sf(data =provinces_belges, color = "black", fill = NA, size = 4) +  # Ajouter les frontières
+  labs(title = partetudie)+
+  #      fill = "Pourcentage de vote")+
+  theme(
+    panel.grid.major = element_blank(),  # Supprimer le quadrillage majeur
+    panel.grid.minor = element_blank(),  # Supprimer le quadrillage mineur
+    axis.text = element_blank(),         # Supprimer les textes des axes
+    axis.ticks = element_blank()         # Supprimer les ticks des axes
+  )+
+  guides(fill = "none")
+
+
+
+ggsave(maphd,filename = paste0(
+  "C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/",
+  "result_europ_2024_",partetudie,".jpeg"),width = 20, height = 16, dpi = 150)
+
+
+mapcomplet<-ggplot(data = parti) +
+  geom_sf(aes(fill = total_bins)) +  # Remplacez `total` par la colonne que vous souhaitez utiliser pour la coloration
+  #scale_fill_brewer(palette = couleurdechoix) +
+  scale_fill_manual(values = choixcouleur) +
+  theme_minimal() +
+  geom_sf(data =electoral_cantons, color = "black", fill = NA, size = 0.5) +  # Ajouter les frontières
+  labs(title = partetudie)+
+  #      fill = "Pourcentage de vote")+
+  theme(
+    panel.grid.major = element_blank(),  # Supprimer le quadrillage majeur
+    panel.grid.minor = element_blank(),  # Supprimer le quadrillage mineur
+    axis.text = element_blank(),         # Supprimer les textes des axes
+    axis.ticks = element_blank()         # Supprimer les ticks des axes
+  )
+
+
+ggsave(mapcomplet,filename = paste0(
+  "C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/",
+  "result_europ_2024_simple_",partetudie,".jpeg"),width = 10, height = 8, dpi = 150)
+mapcomplet
+
+
+
+arrondissementblx<-c("Anderlecht",
+                     "Bruxelles Brussel",
+                     "Ixelles Elsene",
+                     "Molenbeek-Saint-Jean Sint-Jans-Molenbeek",
+                     "Saint-Gilles Sint-Gillis",
+                     "Saint-Josse-ten-Noode Sint-Joost-ten-Node",
+                     "Schaerbeek Schaarbeek",
+                     "Uccle Ukkel")
+
+partibxl<-parti%>%filter(cantonhead%in%arrondissementblx)
+electoral_cantonsbxl<-electoral_cantons%>%filter(cantonhead%in%arrondissementblx)
+mapbxl<-ggplot(data = partibxl) +
+  geom_sf(aes(fill = total_bins)) +  # Remplacez `total` par la colonne que vous souhaitez utiliser pour la coloration
+  #scale_fill_brewer(palette = couleurdechoix) +
+  scale_fill_manual(values = choixcouleur) +
+  theme_minimal() +
+  geom_sf(data =electoral_cantonsbxl, color = "black", fill = NA, size = 0.5) +  # Ajouter les frontières
+  labs(title = partetudie)+
+   # labs(title = partetudie,
+  #      fill = "Pourcentage de vote")+
+  theme(
+    panel.grid.major = element_blank(),  # Supprimer le quadrillage majeur
+    panel.grid.minor = element_blank(),  # Supprimer le quadrillage mineur
+    axis.text = element_blank(),         # Supprimer les textes des axes
+    axis.ticks = element_blank()         # Supprimer les ticks des axes
+  )+
+  guides(fill = "none")
+
+ggsave(mapbxl,filename = paste0(
+  "C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/",
+  "result_europ_2024_",partetudie,"BXL_",".jpeg"),width = 10, height = 8, dpi = 150)
+
+
+
+
+}
+
+#variationavec2019
+for(i in listeparti){
+  partetudie<-i
+x<-election_europe%>%group_by(CODE_RECONCILIATION,PARTI_REGROUPE )%>%summarise(total = sum(variation))
+max(x$total)
+min(x$total)
+
+
+election_europe$variation
+partione_variation<- election_europe%>%filter(PARTI_REGROUPE == partetudie)%>%group_by(CODE_RECONCILIATION)%>%summarise(total = sum(variation))
+partione_variation$CODE_RECONCILIATION
+
+max(partione_variation$total)
+min(partione_variation$total)
+partione_variation$total
+
+partione_variation$total_bins <- cut(partione_variation$total, breaks = seq(-0.3, 0.3, by = 0.1), include.lowest = TRUE)
+
+parti<-merge(electoral_cantons,partione_variation, by.x =  "cantonhead", by.y = "CODE_RECONCILIATION" )
+
+
+
+
+###creation de carte ----
+
+  
+maphd<-ggplot(data = parti) +
+  geom_sf(aes(fill = total_bins)) +  # Remplacez `total` par la colonne que vous souhaitez utiliser pour la coloration
+  #scale_fill_brewer(palette = couleurdechoix) +
+  scale_fill_manual(values = choixcouleur) +
+  theme_minimal() +
+  geom_sf(data =electoral_cantons, color = "grey", fill = NA, size = 0.5) +  # Ajouter les frontières
+  geom_sf(data =provinces_belges, color = "black", fill = NA, size = 4) +  # Ajouter les frontières
+  labs(title = partetudie)+
+  #      fill = "Pourcentage de vote")+
+  theme(
+    panel.grid.major = element_blank(),  # Supprimer le quadrillage majeur
+    panel.grid.minor = element_blank(),  # Supprimer le quadrillage mineur
+    axis.text = element_blank(),         # Supprimer les textes des axes
+    axis.ticks = element_blank()         # Supprimer les ticks des axes
+  )
+
+maphd
+ggsave(maphd,filename = paste0(
+  "C:/Users/u99amo/OneDrive - ACV-CSC/Antoine @ ACV-CSC - Linked Files/CARTE_ELECTION_2024/",
+  "evolution_2024_2019_result_europ_2024_",partetudie,".jpeg"),width = 10, height = 8, dpi = 150)
+}
+
+
